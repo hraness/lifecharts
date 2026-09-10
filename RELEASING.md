@@ -33,6 +33,21 @@ attestation. An existing draft can resume with missing assets; differing assets
 stop the workflow. A completed matching release is verified without another
 publication. A published release without `immutable: true` fails verification.
 
+If a release run fails after creating a draft, inspect the existing release and
+merge any controller repair through reviewed main. Repeat the administrator
+immutability preflight, then recover the existing version without moving its tag:
+
+```sh
+gh workflow run release.yml --repo hraness/lifecharts --ref main -f version=1.0.0
+```
+
+Recovery runs the reviewed main workflow while CI, packaging, and `release.json`
+use the original tag's commit. The tag must still belong to main history. Drafts
+are resolved through the paginated release list because GitHub's published-tag
+endpoint can return 404 for a draft. A unique matching draft is refreshed by its
+release ID; conflicting source, duplicate matches, or an incomplete bounded list
+stop before another release is created. Existing uploaded bytes remain unchanged.
+
 Release immutability must be enabled before the first publication:
 
 ```sh
