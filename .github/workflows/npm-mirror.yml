@@ -1,0 +1,215 @@
+name: npm mirror
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Exact stable version from an immutable GitHub release
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifecharts-npm-mirror
+  cancel-in-progress: false
+
+jobs:
+  artifact:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    outputs:
+      id: ${{ steps.upload.outputs.artifact-id }}
+      version: ${{ steps.source.outputs.version }}
+      sha: ${{ steps.source.outputs.sha }}
+      sha256: ${{ steps.verify.outputs.sha256 }}
+      integrity: ${{ steps.verify.outputs.integrity }}
+    steps:
+      - name: Resolve the immutable public release
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', path]))
+          repository, version = 'hraness/lifecharts', os.environ['VERSION']
+          assert os.environ['GITHUB_REPOSITORY'] == repository
+          assert os.environ['GITHUB_REF'] == 'refs/heads/main', 'Dispatch the reviewed main workflow'
+          assert re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)', version)
+          remote = api(f'repos/{repository}')
+          assert remote['private'] is False and remote['visibility'] == 'public' and remote['default_branch'] == 'main'
+          release = api(f'repos/{repository}/releases/tags/v{version}')
+          assert release['tag_name'] == f'v{version}' and release['immutable'] is True and release['draft'] is False and release['prerelease'] is False
+          sha = api(f'repos/{repository}/commits/v{version}')['sha']
+          assert re.fullmatch(r'[0-9a-f]{40}', sha) and release['target_commitish'] == sha
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'version={version}\nsha={sha}\n')
+          PY
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ steps.source.outputs.sha }}
+          fetch-depth: 1
+          fetch-tags: false
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.20.0
+          package-manager-cache: false
+      - run: npm install --global npm@11.19.0 --ignore-scripts --registry=https://registry.npmjs.org
+      - name: Download and verify the canonical archive
+        id: verify
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.source.outputs.version }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          output="$RUNNER_TEMP/lifecharts-mirror"
+          mkdir "$output"
+          gh release download "v$VERSION" --repo hraness/lifecharts --dir "$output" \
+            --pattern "hraness-lifecharts-$VERSION.tgz" --pattern release.json --pattern SHA256SUMS
+          gh api "repos/hraness/lifecharts/releases/tags/v$VERSION" > "$RUNNER_TEMP/lifecharts-remote-release.json"
+          python3 - <<'PY'
+          import base64, hashlib, json, os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'lifecharts-mirror'
+          version, sha = os.environ['VERSION'], os.environ['SOURCE_SHA']
+          filename = f'hraness-lifecharts-{version}.tgz'
+          names = {filename, 'release.json', 'SHA256SUMS'}
+          assert {p.name for p in root.iterdir()} == names
+          assert all(p.is_file() and not p.is_symlink() for p in root.iterdir())
+          archive = (root / filename).read_bytes()
+          digest = hashlib.sha256(archive).hexdigest()
+          integrity = 'sha512-' + base64.b64encode(hashlib.sha512(archive).digest()).decode()
+          receipt = json.loads((root / 'release.json').read_text())
+          assert receipt == {'schema': 1, 'name': '@hraness/lifecharts', 'version': version, 'tag': f'v{version}', 'sourceSha': sha, 'archive': filename, 'sha256': digest, 'integrity': integrity}
+          expected_sums = ''.join(hashlib.sha256((root / name).read_bytes()).hexdigest() + '  ' + name + '\n' for name in [filename, 'release.json'])
+          assert (root / 'SHA256SUMS').read_text() == expected_sums
+          release = json.loads((pathlib.Path(os.environ['RUNNER_TEMP']) / 'lifecharts-remote-release.json').read_text())
+          assert release['tag_name'] == f'v{version}' and release['target_commitish'] == sha
+          assert release['immutable'] is True and release['draft'] is False and release['prerelease'] is False
+          assert len(release['assets']) == len(names) and {asset['name'] for asset in release['assets']} == names
+          for asset in release['assets']:
+              data = (root / asset['name']).read_bytes()
+              assert asset['state'] == 'uploaded' and asset['size'] == len(data)
+              assert asset['digest'] == 'sha256:' + hashlib.sha256(data).hexdigest()
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'sha256={digest}\nintegrity={integrity}\n')
+          PY
+          gh release verify-asset "v$VERSION" "$output/hraness-lifecharts-$VERSION.tgz" --repo hraness/lifecharts
+          python3 scripts/verify-package.py "$output/hraness-lifecharts-$VERSION.tgz" .
+          node scripts/check-package.mjs "$output/hraness-lifecharts-$VERSION.tgz"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        id: upload
+        with:
+          name: lifecharts-npm-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/lifecharts-mirror/
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: artifact
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    environment: npm-release
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      VERSION: ${{ needs.artifact.outputs.version }}
+      SOURCE_SHA: ${{ needs.artifact.outputs.sha }}
+      ARCHIVE_SHA256: ${{ needs.artifact.outputs.sha256 }}
+      ARCHIVE_INTEGRITY: ${{ needs.artifact.outputs.integrity }}
+    steps:
+      # The OIDC job never checks out or executes the distributed package.
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.20.0
+          package-manager-cache: false
+      - run: npm install --global npm@11.19.0 --ignore-scripts --registry=https://registry.npmjs.org
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
+        with:
+          artifact-ids: ${{ needs.artifact.outputs.id }}
+          merge-multiple: true
+          path: ${{ runner.temp }}/lifecharts-mirror
+      - name: Mirror once through OIDC and verify public bytes
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          cd "$RUNNER_TEMP"
+          export NPM_CONFIG_USERCONFIG="$RUNNER_TEMP/lifecharts-empty.npmrc"
+          export NPM_CONFIG_GLOBALCONFIG="$RUNNER_TEMP/lifecharts-empty-global.npmrc"
+          export NPM_CONFIG_CACHE="$RUNNER_TEMP/lifecharts-npm-cache"
+          touch "$NPM_CONFIG_USERCONFIG" "$NPM_CONFIG_GLOBALCONFIG"
+          unset NODE_AUTH_TOKEN NPM_TOKEN NPM_AUTH_TOKEN NODE_OPTIONS NPM_CONFIG_TAG npm_config_tag
+          node --input-type=module <<'JS'
+          import { createHash } from 'node:crypto';
+          import { execFileSync, spawnSync } from 'node:child_process';
+          import { readFileSync } from 'node:fs';
+          const repository = 'hraness/lifecharts';
+          const version = process.env.VERSION;
+          if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) throw new Error('Invalid version');
+          const filename = `hraness-lifecharts-${version}.tgz`;
+          const archive = `${process.env.RUNNER_TEMP}/lifecharts-mirror/${filename}`;
+          const bytes = readFileSync(archive);
+          const digest = data => createHash('sha256').update(data).digest('hex');
+          if (digest(bytes) !== process.env.ARCHIVE_SHA256 || `sha512-${createHash('sha512').update(bytes).digest('base64')}` !== process.env.ARCHIVE_INTEGRITY) throw new Error('Transferred archive differs');
+          const api = path => JSON.parse(execFileSync('gh', ['api', path], { encoding: 'utf8' }));
+          const remote = api(`repos/${repository}`);
+          if (remote.private || remote.visibility !== 'public') throw new Error('Public repository required');
+          const release = api(`repos/${repository}/releases/tags/v${version}`);
+          const asset = release.assets.find(item => item.name === filename);
+          if (!release.immutable || release.draft || release.prerelease || release.tag_name !== `v${version}` || release.target_commitish !== process.env.SOURCE_SHA || !asset || asset.state !== 'uploaded' || asset.size !== bytes.length || asset.digest !== `sha256:${process.env.ARCHIVE_SHA256}`) throw new Error('Canonical release changed');
+          const registry = 'https://registry.npmjs.org';
+          const metadataUrl = `${registry}/@hraness%2Flifecharts/${version}`;
+          const tarballUrl = `${registry}/@hraness/lifecharts/-/lifecharts-${version}.tgz`;
+          const request = url => fetch(url, { redirect: 'error', signal: AbortSignal.timeout(20_000) });
+          const compare = (left, right) => {
+            const stable = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
+            if (typeof left !== 'string' || typeof right !== 'string' || !stable.test(left) || !stable.test(right)) throw new Error('Stable npm latest required');
+            const a = left.split('.').map(BigInt), b = right.split('.').map(BigInt);
+            for (let index = 0; index < 3; index++) if (a[index] !== b[index]) return a[index] > b[index] ? 1 : -1;
+            return 0;
+          };
+          const checkMetadata = metadata => {
+            if (metadata.name !== '@hraness/lifecharts' || metadata.version !== version || metadata.dist?.integrity !== process.env.ARCHIVE_INTEGRITY || metadata.dist?.tarball !== tarballUrl) throw new Error('Existing npm package differs from the canonical archive');
+          };
+          const state = await request(metadataUrl);
+          if (state.status === 404) {
+            const tagsResponse = await request(`${registry}/-/package/@hraness%2Flifecharts/dist-tags`);
+            if (tagsResponse.status === 404) throw new Error('Complete the first npm publication and trusted-publisher setup before dispatching this mirror');
+            if (!tagsResponse.ok) throw new Error(`Registry state is ambiguous (${tagsResponse.status})`);
+            const tags = await tagsResponse.json();
+            if (compare(version, tags.latest) <= 0) throw new Error('Candidate does not advance npm latest');
+            const result = spawnSync('npm', ['publish', archive, '--ignore-scripts', '--access=public', '--provenance', `--registry=${registry}`], { stdio: 'inherit' });
+            if (result.status !== 0) {
+              // Reconcile an uncertain response without repeating or downgrading publication.
+              const after = await request(metadataUrl);
+              if (!after.ok) throw new Error('npm publication failed or needs authentication/policy approval. Inspect the exact version; no retry or alternate publishing route was attempted.');
+              checkMetadata(await after.json());
+            }
+          } else if (state.ok) {
+            checkMetadata(await state.json());
+          } else {
+            throw new Error(`Registry state is ambiguous (${state.status})`);
+          }
+          for (let attempt = 0; attempt < 41; attempt++) {
+            if (attempt) await new Promise(resolve => setTimeout(resolve, 30_000));
+            const metadataResponse = await request(metadataUrl);
+            if (metadataResponse.status === 404) continue;
+            if (!metadataResponse.ok) throw new Error(`Registry verification failed (${metadataResponse.status})`);
+            checkMetadata(await metadataResponse.json());
+            const published = await request(tarballUrl);
+            if (published.status === 404) continue; // npm scanning can delay tarball availability.
+            if (!published.ok || digest(Buffer.from(await published.arrayBuffer())) !== process.env.ARCHIVE_SHA256) throw new Error('Public npm archive differs');
+            const tagsResponse = await request(`${registry}/-/package/@hraness%2Flifecharts/dist-tags`);
+            if (!tagsResponse.ok || compare((await tagsResponse.json()).latest, version) < 0) throw new Error('npm latest is missing or behind; do not retag automatically');
+            console.log(`Verified @hraness/lifecharts@${version}: ${process.env.ARCHIVE_SHA256}`);
+            process.exit(0);
+          }
+          throw new Error('Public npm bytes are not yet visible. Inspect registry/scanning state before another dispatch; never publish blindly again.');
+          JS

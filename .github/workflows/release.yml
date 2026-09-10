@@ -1,0 +1,147 @@
+name: Canonical release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lifecharts-canonical-release
+  cancel-in-progress: false
+
+jobs:
+  check:
+    uses: ./.github/workflows/ci.yml
+
+  release:
+    needs: check
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 1
+          fetch-tags: false
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 24.20.0
+          package-manager-cache: false
+      - run: npm install --global npm@11.19.0 --ignore-scripts --registry=https://registry.npmjs.org
+      - name: Admit the public release source
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, re, subprocess
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', path]))
+          repository = 'hraness/lifecharts'
+          package = json.loads(pathlib.Path('package.json').read_text())
+          version = package['version']
+          assert re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)', version), 'Stable version required'
+          assert package['name'] == '@hraness/lifecharts'
+          assert os.environ['GITHUB_REPOSITORY'] == repository
+          assert os.environ['GITHUB_EVENT_NAME'] == 'push'
+          assert os.environ['GITHUB_REF'] == f'refs/tags/v{version}'
+          sha = os.environ['GITHUB_SHA']
+          assert re.fullmatch(r'[0-9a-f]{40}', sha)
+          assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == sha
+          remote = api(f'repos/{repository}')
+          assert remote['private'] is False and remote['visibility'] == 'public' and remote['default_branch'] == 'main'
+          # The administrator checks the setting before tagging; this endpoint
+          # requires Administration:read, which GITHUB_TOKEN cannot carry.
+          assert api(f'repos/{repository}/commits/v{version}')['sha'] == sha
+          main = api(f'repos/{repository}/git/ref/heads/main')['object']['sha']
+          comparison = api(f'repos/{repository}/compare/{sha}...{main}')
+          assert comparison['status'] in ['identical', 'ahead'] and comparison['merge_base_commit']['sha'] == sha, 'Tag must belong to reviewed main history'
+          PY
+      - name: Pack once, verify the package, and record the release bytes
+        run: |
+          set -euo pipefail
+          output="$RUNNER_TEMP/lifecharts-release"
+          mkdir "$output"
+          npm pack --ignore-scripts --json --pack-destination "$output" > "$RUNNER_TEMP/lifecharts-pack.json"
+          archive="$output/$(node -p "JSON.parse(require('node:fs').readFileSync(process.env.RUNNER_TEMP + '/lifecharts-pack.json', 'utf8'))[0].filename")"
+          python3 scripts/verify-package.py "$archive" .
+          node scripts/check-package.mjs "$archive"
+          python3 - <<'PY'
+          import base64, hashlib, json, os, pathlib
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'lifecharts-release'
+          package = json.loads(pathlib.Path('package.json').read_text())
+          version = package['version']
+          filename = f'hraness-lifecharts-{version}.tgz'
+          assert [p.name for p in root.iterdir()] == [filename]
+          data = (root / filename).read_bytes()
+          receipt = {'schema': 1, 'name': package['name'], 'version': version, 'tag': f'v{version}', 'sourceSha': os.environ['GITHUB_SHA'], 'archive': filename, 'sha256': hashlib.sha256(data).hexdigest(), 'integrity': 'sha512-' + base64.b64encode(hashlib.sha512(data).digest()).decode()}
+          (root / 'release.json').write_text(json.dumps(receipt, indent=2) + '\n')
+          (root / 'SHA256SUMS').write_text(''.join(hashlib.sha256((root / name).read_bytes()).hexdigest() + '  ' + name + '\n' for name in [filename, 'release.json']))
+          PY
+      - name: Publish or reconcile the exact immutable release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          python3 - <<'PY'
+          import hashlib, json, os, pathlib, subprocess
+          repository = 'hraness/lifecharts'
+          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'lifecharts-release'
+          receipt = json.loads((root / 'release.json').read_text())
+          tag, sha = receipt['tag'], receipt['sourceSha']
+          expected = {p.name: p.read_bytes() for p in root.iterdir()}
+          def api(path, missing=False):
+              result = subprocess.run(['gh', 'api', path], capture_output=True, text=True)
+              if result.returncode:
+                  if missing and '(HTTP 404)' in result.stderr:
+                      return None
+                  raise RuntimeError(result.stderr)
+              return json.loads(result.stdout)
+          def current():
+              return api(f'repos/{repository}/releases/tags/{tag}', missing=True)
+          def identity(release):
+              assert release is not None, 'Release is not visible; inspect before retrying'
+              assert release['tag_name'] == tag and release['target_commitish'] == sha
+              assert release['prerelease'] is False
+              assert release['draft'] or release['immutable'] is True, 'Published release must be immutable'
+          def assets(release, complete):
+              seen = set()
+              for asset in release['assets']:
+                  name = asset['name']
+                  assert name in expected and name not in seen and asset['state'] == 'uploaded', 'Unexpected release asset'
+                  seen.add(name)
+                  data = expected[name]
+                  assert asset['size'] == len(data)
+                  assert asset['digest'] == 'sha256:' + hashlib.sha256(data).hexdigest(), 'Existing release bytes differ; never replace them'
+                  downloaded = subprocess.check_output(['gh', 'api', '-H', 'Accept: application/octet-stream', f"repos/{repository}/releases/assets/{asset['id']}"])
+                  assert downloaded == data, 'Release asset readback differs'
+              if complete:
+                  assert seen == set(expected), 'Incomplete release; inspect and resume the same artifact'
+              return seen
+          release = current()
+          if release is None:
+              # One create attempt, followed by readback even if the response was uncertain.
+              subprocess.run(['gh', 'release', 'create', tag, '--repo', repository, '--draft', '--verify-tag', '--target', sha, '--title', 'Lifecharts ' + receipt['version'], '--notes', f'Lifecharts CLI and Agent Skill.\n\nSource commit: {sha}\n\nThe attached archive is the canonical distribution.'])
+              release = current()
+          identity(release)
+          seen = assets(release, complete=not release['draft'])
+          if release['draft']:
+              missing = sorted(set(expected) - seen)
+              if missing:
+                  subprocess.run(['gh', 'release', 'upload', tag, '--repo', repository, *[str(root / name) for name in missing]])
+              release = current()
+              identity(release)
+              assets(release, complete=True)
+              assert api(f'repos/{repository}/commits/{tag}')['sha'] == sha, 'Tag changed during release'
+              # Never clobber assets or repeat a publication without reconciling remote state.
+              subprocess.run(['gh', 'release', 'edit', tag, '--repo', repository, '--draft=false'])
+              release = current()
+          identity(release)
+          assert release['draft'] is False and release['immutable'] is True
+          assets(release, complete=True)
+          subprocess.run(['gh', 'release', 'verify-asset', tag, str(root / receipt['archive']), '--repo', repository], check=True)
+          print(release['html_url'])
+          PY
