@@ -3,6 +3,12 @@ name: Canonical release
 on:
   push:
     tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Existing stable version tag to recover without moving it
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -12,19 +18,67 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  resolve:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    outputs:
+      sha: ${{ steps.source.outputs.sha }}
+      version: ${{ steps.source.outputs.version }}
+    steps:
+      - name: Resolve the existing release tag
+        id: source
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ inputs.version }}
+        run: |
+          python3 - <<'PY'
+          import json, os, re, subprocess
+          def api(path):
+              return json.loads(subprocess.check_output(['gh', 'api', path]))
+          repository = 'hraness/lifecharts'
+          assert os.environ['GITHUB_REPOSITORY'] == repository, 'Unexpected release repository'
+          event, ref = os.environ['GITHUB_EVENT_NAME'], os.environ['GITHUB_REF']
+          if event == 'push':
+              assert ref.startswith('refs/tags/v'), 'Release push must identify a version tag'
+              version = ref[len('refs/tags/v'):]
+          elif event == 'workflow_dispatch':
+              assert ref == 'refs/heads/main', 'Recovery must use the reviewed main workflow'
+              version = os.environ['VERSION']
+          else:
+              raise AssertionError('Unsupported release event')
+          assert re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)', version), 'Stable version required'
+          remote = api(f'repos/{repository}')
+          assert remote['private'] is False and remote['visibility'] == 'public' and remote['default_branch'] == 'main', 'Canonical public repository required'
+          sha = api(f'repos/{repository}/commits/v{version}')['sha']
+          assert re.fullmatch(r'[0-9a-f]{40}', sha), 'Existing tag must resolve to one commit'
+          if event == 'push':
+              assert sha == os.environ['GITHUB_SHA'], 'Tag no longer identifies the triggering source'
+          main = api(f'repos/{repository}/git/ref/heads/main')['object']['sha']
+          comparison = api(f'repos/{repository}/compare/{sha}...{main}')
+          assert comparison['status'] in ['identical', 'ahead'] and comparison['merge_base_commit']['sha'] == sha, 'Tag must belong to reviewed main history'
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f'sha={sha}\nversion={version}\n')
+          PY
+
   check:
+    needs: resolve
     uses: ./.github/workflows/ci.yml
+    with:
+      source: ${{ needs.resolve.outputs.sha }}
 
   release:
-    needs: check
+    needs: [resolve, check]
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     permissions:
       contents: write
+    env:
+      SOURCE_SHA: ${{ needs.resolve.outputs.sha }}
+      VERSION: ${{ needs.resolve.outputs.version }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          ref: ${{ github.sha }}
+          ref: ${{ needs.resolve.outputs.sha }}
           fetch-depth: 1
           fetch-tags: false
           persist-credentials: false
@@ -47,9 +101,8 @@ jobs:
           assert re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)', version), 'Stable version required'
           assert package['name'] == '@hraness/lifecharts'
           assert os.environ['GITHUB_REPOSITORY'] == repository
-          assert os.environ['GITHUB_EVENT_NAME'] == 'push'
-          assert os.environ['GITHUB_REF'] == f'refs/tags/v{version}'
-          sha = os.environ['GITHUB_SHA']
+          assert version == os.environ['VERSION'], 'Package version differs from the selected tag'
+          sha = os.environ['SOURCE_SHA']
           assert re.fullmatch(r'[0-9a-f]{40}', sha)
           assert subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip() == sha
           remote = api(f'repos/{repository}')
@@ -78,7 +131,7 @@ jobs:
           filename = f'hraness-lifecharts-{version}.tgz'
           assert [p.name for p in root.iterdir()] == [filename]
           data = (root / filename).read_bytes()
-          receipt = {'schema': 1, 'name': package['name'], 'version': version, 'tag': f'v{version}', 'sourceSha': os.environ['GITHUB_SHA'], 'archive': filename, 'sha256': hashlib.sha256(data).hexdigest(), 'integrity': 'sha512-' + base64.b64encode(hashlib.sha512(data).digest()).decode()}
+          receipt = {'schema': 1, 'name': package['name'], 'version': version, 'tag': f'v{version}', 'sourceSha': os.environ['SOURCE_SHA'], 'archive': filename, 'sha256': hashlib.sha256(data).hexdigest(), 'integrity': 'sha512-' + base64.b64encode(hashlib.sha512(data).digest()).decode()}
           (root / 'release.json').write_text(json.dumps(receipt, indent=2) + '\n')
           (root / 'SHA256SUMS').write_text(''.join(hashlib.sha256((root / name).read_bytes()).hexdigest() + '  ' + name + '\n' for name in [filename, 'release.json']))
           PY
@@ -101,10 +154,30 @@ jobs:
                   raise RuntimeError(result.stderr)
               return json.loads(result.stdout)
           def current():
-              return api(f'repos/{repository}/releases/tags/{tag}', missing=True)
+              published = api(f'repos/{repository}/releases/tags/{tag}', missing=True)
+              if published is not None:
+                  return published
+              # GitHub's tag endpoint omits drafts, including a successful create.
+              # Prove a unique match across complete pages before creating anything.
+              matches = []
+              for page in range(1, 11):
+                  releases = api(f'repos/{repository}/releases?per_page=100&page={page}')
+                  assert isinstance(releases, list), 'Release listing returned an invalid response'
+                  matches.extend(item for item in releases if item['tag_name'] == tag)
+                  if len(releases) < 100:
+                      break
+              else:
+                  raise AssertionError('Release listing exceeded 1,000 entries; inspect without creating a duplicate')
+              assert len(matches) <= 1, 'Multiple releases match the version tag; preserve them for inspection'
+              if not matches:
+                  return None
+              match = matches[0]
+              assert match['draft'] is True, 'Published-tag lookup and release listing disagree; inspect before retrying'
+              assert isinstance(match['id'], int) and match['id'] > 0, 'Draft has no valid release ID'
+              return api(f"repos/{repository}/releases/{match['id']}")
           def identity(release):
               assert release is not None, 'Release is not visible; inspect before retrying'
-              assert release['tag_name'] == tag and release['target_commitish'] == sha
+              assert release['tag_name'] == tag and release['target_commitish'] == sha, 'Existing release belongs to different source; preserve it'
               assert release['prerelease'] is False
               assert release['draft'] or release['immutable'] is True, 'Published release must be immutable'
           def assets(release, complete):
@@ -137,7 +210,7 @@ jobs:
               assets(release, complete=True)
               assert api(f'repos/{repository}/commits/{tag}')['sha'] == sha, 'Tag changed during release'
               # Never clobber assets or repeat a publication without reconciling remote state.
-              subprocess.run(['gh', 'release', 'edit', tag, '--repo', repository, '--draft=false'])
+              subprocess.run(['gh', 'api', '--method', 'PATCH', f"repos/{repository}/releases/{release['id']}", '-F', 'draft=false'], stdout=subprocess.DEVNULL)
               release = current()
           identity(release)
           assert release['draft'] is False and release['immutable'] is True
