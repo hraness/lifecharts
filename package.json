@@ -1,0 +1,39 @@
+{
+  "name": "@hraness/lifecharts",
+  "version": "1.0.0",
+  "description": "Create, edit, and verify portable Lifecharts timelines locally, with an agent skill included.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.14.0"
+  },
+  "bin": {
+    "lifecharts": "bin/lifecharts.mjs"
+  },
+  "files": [
+    "bin/lifecharts.mjs",
+    "skills/lifecharts",
+    "README.md",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hraness/lifecharts.git"
+  },
+  "homepage": "https://lifecharts.io/agents",
+  "bugs": {
+    "url": "https://github.com/hraness/lifecharts/issues"
+  },
+  "keywords": [
+    "lifecharts",
+    "timeline",
+    "life",
+    "career",
+    "agent-skill",
+    "cli"
+  ],
+  "publishConfig": {
+    "access": "public",
+    "registry": "https://registry.npmjs.org/"
+  }
+}

@@ -1,0 +1,4 @@
+interface:
+  display_name: "Lifecharts"
+  short_description: "Create and edit your life in chapters"
+  default_prompt: "Use $lifecharts to make a thoughtful life chart from my dates and chapters, or edit my existing chart, and return a verified link."
