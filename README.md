@@ -6,18 +6,20 @@ Use Node.js 22.14 or newer, or Bun 1.3.14 or newer. The package has no runtime d
 
 ## Run the CLI
 
-The immutable GitHub Release archive is the canonical distribution. Run version 1.0.0 directly:
+The immutable GitHub Release archive is the canonical distribution. Run version 1.0.1 directly:
 
 ```sh
-npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.0/hraness-lifecharts-1.0.0.tgz lifecharts --help
+npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.1/hraness-lifecharts-1.0.1.tgz lifecharts --help
 ```
 
 When this version is available on npm, its archive is an exact-byte mirror:
 
 ```sh
-npx --yes @hraness/lifecharts@1.0.0 --help
-npm install --global @hraness/lifecharts@1.0.0
+npx --yes @hraness/lifecharts@1.0.1 --help
+npm install --global @hraness/lifecharts@1.0.1
 ```
+
+Run `lifecharts` without arguments for a brief introduction and command help. Piped output stays plain.
 
 Write your chapters into `timeline.json`:
 
@@ -46,7 +48,7 @@ lifecharts compile chart.json > updated.url
 Without a global installation, use this pinned command prefix before the command and arguments:
 
 ```sh
-npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.0/hraness-lifecharts-1.0.0.tgz lifecharts create timeline.json --json
+npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.1/hraness-lifecharts-1.0.1.tgz lifecharts create timeline.json --json
 ```
 
 `create --json` returns the complete document, share link, edit link, and embed link. Use `-` for stdin. Quote complete URLs in shell commands.
