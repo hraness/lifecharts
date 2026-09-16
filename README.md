@@ -6,17 +6,17 @@ Use Node.js 22.14 or newer, or Bun 1.3.14 or newer. The package has no runtime d
 
 ## Run the CLI
 
-The immutable GitHub Release archive is the canonical distribution. Run version 1.0.1 directly:
+The immutable GitHub Release archive is the canonical distribution. The commands below target version 1.0.2 and require its published immutable release. The prior published version is 1.0.1.
 
 ```sh
-npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.1/hraness-lifecharts-1.0.1.tgz lifecharts --help
+npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.2/hraness-lifecharts-1.0.2.tgz lifecharts --help
 ```
 
 When this version is available on npm, its archive is an exact-byte mirror:
 
 ```sh
-npx --yes @hraness/lifecharts@1.0.1 --help
-npm install --global @hraness/lifecharts@1.0.1
+npx --yes @hraness/lifecharts@1.0.2 --help
+npm install --global @hraness/lifecharts@1.0.2
 ```
 
 Run `lifecharts` without arguments for a brief introduction and command help. Piped output stays plain.
@@ -48,7 +48,7 @@ lifecharts compile chart.json > updated.url
 Without a global installation, use this pinned command prefix before the command and arguments:
 
 ```sh
-npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.1/hraness-lifecharts-1.0.1.tgz lifecharts create timeline.json --json
+npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.2/hraness-lifecharts-1.0.2.tgz lifecharts create timeline.json --json
 ```
 
 `create --json` returns the complete document, share link, edit link, and embed link. Use `-` for stdin. Quote complete URLs in shell commands.
@@ -75,3 +75,22 @@ Read [the format reference](skills/lifecharts/references/chart-format.md) for li
 The returned URL contains the chart. Anyone with it can read its title, dates, chapters, notes, and links. Ordinary fragment links keep that data outside the page request. Named social preview images are a separate opt-in action on the website.
 
 Releases include the package archive, `release.json`, and `SHA256SUMS`. Verify the archive checksum before installing from a downloaded file. Published GitHub releases are immutable. The npm mirror can follow later without delaying the canonical release.
+
+## Optional development support
+
+`lifecharts support` shows optional support for continued development. Features
+remain free and no account is required. Accounts presents current terms; the
+person confirms payment in their browser. Lifecharts has no product newsletter
+and does not look up an email address for support.
+
+Useful standalone chart work may print shared agent discovery on stderr. Read
+`lifecharts support protocol --json` for the closeout procedure. Imported runners,
+help, templates, validation, failed commands and unattended CI stay quiet.
+`HRANESS_SUPPORT=off` or `HRANESS_SUPPORT_AUDIENCE=off` disables incidental offers.
+The default audience is an agent, including in a PTY; a human operator can opt
+into terminal rendering with `HRANESS_SUPPORT_AUDIENCE=human`.
+
+`lifecharts support dismiss`, `snooze`, `enable`, and `status --json` manage
+separate local preferences across participating tools. An acknowledged invitation
+starts the shared seven-day cooldown; discovery alone does not. These commands
+never read a chart, sign up, open a browser, or pay.

@@ -1,6 +1,6 @@
 {
   "name": "@hraness/lifecharts",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Create, edit, and verify portable Lifecharts timelines locally, with an agent skill included.",
   "license": "MIT",
   "type": "module",
