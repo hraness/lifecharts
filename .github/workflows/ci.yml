@@ -53,3 +53,20 @@ jobs:
       - name: Check Bun execution
         if: matrix.node == '24.20.0'
         run: bun bin/lifecharts.mjs --version
+
+  required:
+    name: Required
+    if: always()
+    needs: [package]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Require every selected job
+        env:
+          PACKAGE: ${{ needs.package.result }}
+        run: |
+          set -euo pipefail
+          if [[ "$PACKAGE" != success ]]; then
+            printf 'Unexpected required job result: %s\n' "$PACKAGE"
+            exit 1
+          fi
