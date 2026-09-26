@@ -1,16 +1,16 @@
 {
   "schema": 1,
   "name": "@hraness/lifecharts",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "files": {
-    "package.json": "8395fcc2166f39584961a644e46aad20c9f5ebbeb3727a655c9c07d76e78457a",
-    "README.md": "cc60214f82405976fd5c29fd1cd9594e3ad4acc82a569f530232d903b2a012df",
+    "package.json": "4d1b7bdeca9e5f3be4b4fc5705fe92fc1270b556fe2a7a24dff32ae579e2d767",
+    "README.md": "31898bfbe4459dc214d76875c1eba9dfb770e43925c2dcecc4e182bea2ea8088",
     "LICENSE": "f8818a0c7af5e411b83b005a5c1ae8f2ed69bd2cd8a1162e0ab06bd08e2e6100",
-    "bin/lifecharts.mjs": "4d909f6fecedd2565f0a2eff615f428fe30bfbd8bb0923930b189726d51b90d1",
+    "bin/lifecharts.mjs": "a6ba023a9c9c3e3dc7873e3d7fa8d3b37484054ad7e2e78bb72a2adfcedc21e2",
     "skills/lifecharts/SKILL.md": "a0f402d4c1e5b3a3c1fe53588b3aefb8f1a60c397dc8f88b9a0ec3ce7115c46f",
     "skills/lifecharts/LICENSE.md": "f8818a0c7af5e411b83b005a5c1ae8f2ed69bd2cd8a1162e0ab06bd08e2e6100",
     "skills/lifecharts/agents/openai.yaml": "53d5421165d488c69731b78284d2f0bfdd53cd77747c96b165e7a89203bdacaa",
     "skills/lifecharts/references/chart-format.md": "2cddacc1a3dc50d51a90eb580d9f06c84509a75e050455336c7c81e424f7caa9",
-    "skills/lifecharts/scripts/lifecharts.mjs": "4d909f6fecedd2565f0a2eff615f428fe30bfbd8bb0923930b189726d51b90d1"
+    "skills/lifecharts/scripts/lifecharts.mjs": "a6ba023a9c9c3e3dc7873e3d7fa8d3b37484054ad7e2e78bb72a2adfcedc21e2"
   }
 }

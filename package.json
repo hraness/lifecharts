@@ -1,6 +1,6 @@
 {
   "name": "@hraness/lifecharts",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "Lifecharts turns the chapters of your life into one timeline you can share as a link or embed on your own site.",
   "license": "MIT",
   "type": "module",

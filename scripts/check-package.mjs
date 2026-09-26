@@ -18,7 +18,7 @@ try {
   run('npm', ['install', '--ignore-scripts', '--no-audit', '--no-fund', '--offline', resolve(archive)]);
   const installed = join(root, 'node_modules/@hraness/lifecharts');
   const manifest = JSON.parse(await readFile(join(installed, 'package.json'), 'utf8'));
-  assert.equal(run('npm', ['exec', '--offline', '--', 'lifecharts', '--version']), `Lifecharts CLI ${manifest.version} · timeline format 1`);
+  assert.equal(run('npm', ['exec', '--offline', '--', 'lifecharts', '--version']), `lifecharts ${manifest.version}`);
   const cli = join(installed, 'bin/lifecharts.mjs');
   if (Number(manifest.version.split('.')[0]) >= 1 && manifest.version !== '1.0.0' && manifest.version !== '1.0.1') {
     const protocol = JSON.parse(run(process.execPath, [cli, 'support', 'protocol', '--json']));
