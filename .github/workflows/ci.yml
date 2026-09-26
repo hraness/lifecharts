@@ -46,6 +46,12 @@ jobs:
           archive="$output/$(node -p "JSON.parse(require('node:fs').readFileSync(process.env.RUNNER_TEMP + '/lifecharts-pack.json', 'utf8'))[0].filename")"
           python3 scripts/verify-package.py "$archive" .
           node scripts/check-package.mjs "$archive"
+      - name: Check the release page renderer and this version's changelog section
+        if: matrix.node == '24.20.0'
+        run: |
+          set -euo pipefail
+          python3 -m unittest discover -s scripts -p 'test_*.py'
+          python3 scripts/release_notes.py check --version "$(node -p "require('./package.json').version")"
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         if: matrix.node == '24.20.0'
         with:
