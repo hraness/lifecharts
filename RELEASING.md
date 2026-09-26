@@ -11,10 +11,16 @@ the GitHub release.
    the CLI version, skill, and `release-files.json` consistent. The file manifest
    records each package file's SHA-256; generated website source and history do
    not belong in this repository.
-2. Merge after review and both Package CI jobs pass. CI checks the exact npm
+2. Add the version's section to `CHANGELOG.md` in the same pull request: a
+   `## X.Y.Z` heading (optionally `## vX.Y.Z` or `## X.Y.Z - YYYY-MM-DD`), one
+   summary paragraph, then one bullet per change a user would notice. The
+   release page copies this section word for word, so follow `STYLE.md`. CI
+   fails when the package version has no such section, when it is empty, or
+   when it still says Unreleased.
+3. Merge after review and both Package CI jobs pass. CI checks the exact npm
    archive and an isolated installation on Node 22.14.0 and 24.20.0, plus Bun
    execution. The package has no install scripts or runtime dependencies.
-3. Have a repository administrator verify immutability immediately before tagging:
+4. Have a repository administrator verify immutability immediately before tagging:
 
    ```sh
    test "$(gh api repos/hraness/lifecharts/immutable-releases --jq '.enabled')" = true
@@ -22,12 +28,12 @@ the GitHub release.
 
    The setting endpoint requires Administration-read access, which the workflow's
    `GITHUB_TOKEN` cannot carry. A false result or failed lookup stops the release.
-4. Create an annotated `v<version>` tag on that reviewed main commit and push the
+5. Create an annotated `v<version>` tag on that reviewed main commit and push the
    exact tag. Use a new stable version for changed bytes; never move a release tag.
 
 `release.yml` checks the version, public repository identity, and main ancestry.
-It packs once, verifies the archive, creates a
-draft, uploads the archive with `release.json` and `SHA256SUMS`, and publishes the
+It packs once, verifies the archive, renders the release page, creates a
+draft titled `Lifecharts vX.Y.Z`, uploads the archive with `release.json` and `SHA256SUMS`, and publishes the
 draft. It then reads back every asset and verifies the archive's GitHub release
 attestation. An existing draft can resume with missing assets; differing assets
 stop the workflow. A completed matching release is verified without another
@@ -58,6 +64,56 @@ gh api repos/hraness/lifecharts/immutable-releases
 GitHub locks the assets and tag when the draft is published. Follow GitHub's
 [immutable release guidance](https://docs.github.com/en/code-security/concepts/supply-chain-security/immutable-releases)
 and [repository API](https://docs.github.com/en/rest/repos/repos#enable-immutable-releases).
+
+## Release page
+
+`scripts/release_notes.py` builds the page from `CHANGELOG.md` in the tagged
+commit and the release's `release.json`, following the Hraness release page
+standard (`RELEASES.md` in hraness/.github):
+
+1. the version's summary paragraph and, under `## Changes`, its bullets;
+2. `## Install`, with the versioned GitHub Release archive command and then the
+   npm command for the same version;
+3. `## Verify`, with the `SHA256SUMS` asset, the archive digest, the full source
+   commit, and a link to this guide pinned to the tag;
+4. the `release.json` record as one trailing HTML comment,
+   `<!-- lifecharts-release {...} -->`, which forms the last bytes of the body.
+
+The workflow fails before creating a release when the section is missing, empty,
+or says Unreleased. It never uses GitHub's generated notes. On a retry it reads
+the identity record after the last `<!-- lifecharts-release ` marker, requires
+the body to end with `-->`, and requires the title and every byte above the
+record to match a fresh render, so a hand-edited page stops the run for
+inspection. To correct a published page, change `CHANGELOG.md` and the page in
+the same reviewed change:
+
+```sh
+python3 scripts/release_notes.py render --receipt release.json \
+  --changelog CHANGELOG.md --out notes.md --title-out title.txt
+gh release edit vX.Y.Z --repo hraness/lifecharts \
+  --title "$(cat title.txt)" --notes-file notes.md
+```
+
+Download `release.json` from the release first. Run
+`python3 -m unittest discover -s scripts -p 'test_*.py'` after changing the
+renderer.
+
+## Verify a release
+
+Download the archive and its checksum file, then check the digest and confirm
+with GitHub that the archive is the one attached to the immutable release:
+
+```sh
+version=X.Y.Z
+gh release download "v$version" --repo hraness/lifecharts \
+  --pattern "hraness-lifecharts-$version.tgz" --pattern SHA256SUMS --pattern release.json
+sha256sum --check SHA256SUMS   # macOS: shasum -a 256 --check SHA256SUMS
+gh release verify-asset "v$version" "hraness-lifecharts-$version.tgz" --repo hraness/lifecharts
+```
+
+`release.json` records the tag, the full source commit, and the archive's
+SHA-256 and npm integrity value. The npm mirror publishes the same bytes, so
+`npm view @hraness/lifecharts@$version dist.integrity` matches its `integrity`.
 
 ## Establish npm publishing once
 

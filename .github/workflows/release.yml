@@ -135,15 +135,32 @@ jobs:
           (root / 'release.json').write_text(json.dumps(receipt, indent=2) + '\n')
           (root / 'SHA256SUMS').write_text(''.join(hashlib.sha256((root / name).read_bytes()).hexdigest() + '  ' + name + '\n' for name in [filename, 'release.json']))
           PY
+      - name: Render the release page from CHANGELOG.md
+        # Fails before any release exists when the version's section is missing,
+        # empty, or still says Unreleased.
+        run: >-
+          python3 scripts/release_notes.py render
+          --receipt "$RUNNER_TEMP/lifecharts-release/release.json"
+          --changelog CHANGELOG.md
+          --out "$RUNNER_TEMP/lifecharts-notes.md"
+          --title-out "$RUNNER_TEMP/lifecharts-title.txt"
       - name: Publish or reconcile the exact immutable release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           python3 - <<'PY'
-          import hashlib, json, os, pathlib, subprocess
+          import hashlib, json, os, pathlib, subprocess, sys
+          sys.path.insert(0, 'scripts')
+          import release_notes
           repository = 'hraness/lifecharts'
-          root = pathlib.Path(os.environ['RUNNER_TEMP']) / 'lifecharts-release'
+          temp = pathlib.Path(os.environ['RUNNER_TEMP'])
+          root = temp / 'lifecharts-release'
           receipt = json.loads((root / 'release.json').read_text())
+          changelog = pathlib.Path('CHANGELOG.md').read_text(encoding='utf-8')
+          notes_file = temp / 'lifecharts-notes.md'
+          title = (temp / 'lifecharts-title.txt').read_text(encoding='utf-8')
+          assert title == release_notes.title(receipt)
+          assert notes_file.read_text(encoding='utf-8') == release_notes.render_body(receipt, changelog)
           tag, sha = receipt['tag'], receipt['sourceSha']
           expected = {p.name: p.read_bytes() for p in root.iterdir()}
           def api(path, missing=False):
@@ -180,6 +197,13 @@ jobs:
               assert release['tag_name'] == tag and release['target_commitish'] == sha, 'Existing release belongs to different source; preserve it'
               assert release['prerelease'] is False
               assert release['draft'] or release['immutable'] is True, 'Published release must be immutable'
+              assert release['name'] == title, 'Existing release title differs from the release record; inspect before retrying'
+              # The identity record is the trailing HTML comment; the notes above it
+              # must match CHANGELOG.md plus the generated Install and Verify sections.
+              try:
+                  release_notes.verify_body(release['body'] or '', receipt, changelog)
+              except release_notes.ReleaseNotesError as error:
+                  raise AssertionError(f'Existing release page differs: {error}; inspect before retrying') from error
           def assets(release, complete):
               seen = set()
               for asset in release['assets']:
@@ -197,7 +221,7 @@ jobs:
           release = current()
           if release is None:
               # One create attempt, followed by readback even if the response was uncertain.
-              subprocess.run(['gh', 'release', 'create', tag, '--repo', repository, '--draft', '--verify-tag', '--target', sha, '--title', 'Lifecharts ' + receipt['version'], '--notes', f'Lifecharts CLI and Agent Skill.\n\nSource commit: {sha}\n\nThe attached archive is the canonical distribution.'])
+              subprocess.run(['gh', 'release', 'create', tag, '--repo', repository, '--draft', '--verify-tag', '--target', sha, '--title', title, '--notes-file', str(notes_file)])
               release = current()
           identity(release)
           seen = assets(release, complete=not release['draft'])
