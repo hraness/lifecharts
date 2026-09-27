@@ -6,20 +6,20 @@ This package includes a local CLI and the Lifecharts agent skill. Commands creat
 
 ## Run the CLI
 
-The immutable GitHub Release archive is the canonical distribution. The commands below target version 1.0.4 and require its published immutable release. The prior published version is 1.0.2.
+The immutable GitHub Release archive is the canonical distribution. The commands below target version 1.0.5 and require its published immutable release. The prior published version is 1.0.4.
 
 ```sh
-npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.4/hraness-lifecharts-1.0.4.tgz lifecharts --help
+npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.5/hraness-lifecharts-1.0.5.tgz lifecharts --help
 ```
 
 When this version is available on npm, its archive is an exact-byte mirror:
 
 ```sh
-npx --yes @hraness/lifecharts@1.0.4 --help
-npm install --global @hraness/lifecharts@1.0.4
+npx --yes @hraness/lifecharts@1.0.5 --help
+npm install --global @hraness/lifecharts@1.0.5
 ```
 
-Run `lifecharts` without arguments for a brief introduction and command help. Piped output stays plain.
+Run `lifecharts` without arguments for a short start screen, and `lifecharts --help` for every command. Piped output stays plain.
 
 Write your chapters into `timeline.json`:
 
@@ -48,7 +48,7 @@ lifecharts compile chart.json > updated.url
 Without a global installation, use this pinned command prefix before the command and arguments:
 
 ```sh
-npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.4/hraness-lifecharts-1.0.4.tgz lifecharts create timeline.json --json
+npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.0.5/hraness-lifecharts-1.0.5.tgz lifecharts create timeline.json --json
 ```
 
 `create --json` returns the complete document, share link, edit link, and embed link. Use `-` for stdin. Quote complete URLs in shell commands.

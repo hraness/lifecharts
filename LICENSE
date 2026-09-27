@@ -2,9 +2,13 @@ MIT License
 
 Copyright (c) 2026 Hraness contributors
 
-The standalone Lifecharts CLI also bundles @hraness/support-foundation 0.4.0.
+The standalone Lifecharts CLI also bundles @hraness/support-foundation 0.6.0.
 Copyright (c) 2026 Hraness
-Source: https://github.com/hraness/support-foundation/tree/b32c1c81bb2444f50509ed54388758ecfab1f1c0
+Source: https://github.com/hraness/support-foundation/tree/8bb514d24b79dc3f305390700ae312cab88e7ad2
+
+It also bundles the audience rule from @hraness/desktop-foundation 0.8.0.
+Copyright (c) 2026 hraness
+Source: https://github.com/hraness/desktop-foundation/releases/tag/v0.8.0
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal

@@ -85,7 +85,10 @@ node <skill-path>/scripts/lifecharts.mjs verify final.url --json
 Read the verification output and check the requested edit and preserved details.
 Never construct or repair the encoded fragment manually. A file can contain one
 URL, fragment, or JSON document; use `-` to read stdin. Quote URLs in shell
-commands. Failures return nonzero with an actionable message.
+commands. Failures exit nonzero, and an agent gets the error as one JSON object
+on stdout (`{"ok":false,"error":{"code","message","next"}}`), so after a
+redirect, check the exit code and read the error from the output file before the
+next step.
 
 ## Deliver
 
