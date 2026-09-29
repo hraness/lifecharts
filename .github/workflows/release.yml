@@ -149,7 +149,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           python3 - <<'PY'
-          import hashlib, json, os, pathlib, subprocess, sys
+          import hashlib, json, os, pathlib, subprocess, sys, time
           sys.path.insert(0, 'scripts')
           import release_notes
           repository = 'hraness/lifecharts'
@@ -170,6 +170,8 @@ jobs:
                       return None
                   raise RuntimeError(result.stderr)
               return json.loads(result.stdout)
+          class Pending(AssertionError):
+              """Remote release state that GitHub has not finished propagating."""
           def current():
               published = api(f'repos/{repository}/releases/tags/{tag}', missing=True)
               if published is not None:
@@ -189,9 +191,29 @@ jobs:
               if not matches:
                   return None
               match = matches[0]
-              assert match['draft'] is True, 'Published-tag lookup and release listing disagree; inspect before retrying'
+              if match['draft'] is not True:
+                  raise Pending('Published-tag lookup and release listing disagree; inspect before retrying')
               assert isinstance(match['id'], int) and match['id'] > 0, 'Draft has no valid release ID'
               return api(f"repos/{repository}/releases/{match['id']}")
+          def settle(ready, attempts=10, delay=3):
+              # GitHub's release endpoints are read-after-write inconsistent for a
+              # few seconds after create, upload and publish. Read back until the
+              # expected state is visible; never repeat the write inside this loop.
+              for attempt in range(1, attempts + 1):
+                  try:
+                      release = current()
+                  except Pending:
+                      if attempt == attempts:
+                          raise
+                  else:
+                      if release is not None and ready(release):
+                          return release
+                      if attempt == attempts:
+                          return release
+                  print(f'Waiting for the release state to propagate ({attempt}/{attempts})', flush=True)
+                  time.sleep(delay)
+          def uploaded(release):
+              return {a['name'] for a in release['assets'] if a['state'] == 'uploaded'} >= set(expected)
           def identity(release):
               assert release is not None, 'Release is not visible; inspect before retrying'
               assert release['tag_name'] == tag and release['target_commitish'] == sha, 'Existing release belongs to different source; preserve it'
@@ -222,20 +244,20 @@ jobs:
           if release is None:
               # One create attempt, followed by readback even if the response was uncertain.
               subprocess.run(['gh', 'release', 'create', tag, '--repo', repository, '--draft', '--verify-tag', '--target', sha, '--title', title, '--notes-file', str(notes_file)])
-              release = current()
+              release = settle(lambda r: True)
           identity(release)
           seen = assets(release, complete=not release['draft'])
           if release['draft']:
               missing = sorted(set(expected) - seen)
               if missing:
                   subprocess.run(['gh', 'release', 'upload', tag, '--repo', repository, *[str(root / name) for name in missing]])
-              release = current()
+              release = settle(uploaded)
               identity(release)
               assets(release, complete=True)
               assert api(f'repos/{repository}/commits/{tag}')['sha'] == sha, 'Tag changed during release'
               # Never clobber assets or repeat a publication without reconciling remote state.
               subprocess.run(['gh', 'api', '--method', 'PATCH', f"repos/{repository}/releases/{release['id']}", '-F', 'draft=false'], stdout=subprocess.DEVNULL)
-              release = current()
+              release = settle(lambda r: r['draft'] is False and r.get('immutable') is True)
           identity(release)
           assert release['draft'] is False and release['immutable'] is True
           assets(release, complete=True)
