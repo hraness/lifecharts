@@ -8,7 +8,44 @@ on:
     inputs:
       source:
         description: Exact source commit selected by the release controller
-        required: false
+        platforms:
+    name: Platforms / ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-15, windows-2025]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.source || github.sha }}
+          fetch-depth: 1
+          fetch-tags: false
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22.14.0
+          package-manager-cache: false
+      - name: Install the packed archive globally and run it
+        shell: pwsh
+        env:
+          HRANESS_SUPPORT_AUDIENCE: "off"
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $PSNativeCommandUseErrorActionPreference = $true
+          $output = Join-Path $env:RUNNER_TEMP 'lifecharts-package'
+          New-Item -ItemType Directory -Path $output | Out-Null
+          $pack = npm pack --ignore-scripts --json --pack-destination $output | ConvertFrom-Json
+          npm install --global --ignore-scripts --no-audit --no-fund (Join-Path $output $pack[0].filename)
+          $version = (Get-Content package.json -Raw | ConvertFrom-Json).version
+          $reported = lifecharts --version
+          if ($reported -ne "lifecharts $version") { throw "Unexpected version: $reported" }
+          $created = '{"name":"Morgan","view":"bars","chapters":[{"label":"University","start":"2012-09","end":"2016-05"},{"label":"Design work","start":"2016-06","end":"present"}]}' | lifecharts create - --json | ConvertFrom-Json
+          if (-not $created.url.StartsWith('https://lifecharts.io/view#t=1.')) { throw "Unexpected URL: $($created.url)" }
+          lifecharts verify $created.url
+
+  required: false
         type: string
         default: ""
 
@@ -72,16 +109,19 @@ jobs:
   required:
     name: Required
     if: always()
-    needs: [package]
+    needs: [package, platforms]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
       - name: Require every selected job
         env:
           PACKAGE: ${{ needs.package.result }}
+          PLATFORMS: ${{ needs.platforms.result }}
         run: |
           set -euo pipefail
-          if [[ "$PACKAGE" != success ]]; then
-            printf 'Unexpected required job result: %s\n' "$PACKAGE"
-            exit 1
-          fi
+          for result in "$PACKAGE" "$PLATFORMS"; do
+            if [[ "$result" != success ]]; then
+              printf 'Unexpected required job result: %s\n' "$result"
+              exit 1
+            fi
+          done
