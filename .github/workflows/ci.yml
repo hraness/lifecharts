@@ -15,6 +15,13 @@ on:
 permissions:
   contents: read
 
+# Superseded pull request pushes are cancelled. Main pushes, the release
+# controller's workflow_call (tag push or main dispatch), and recoveries are
+# keyed by event and commit and never cancelled.
+concurrency:
+  group: package-ci-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   package:
     name: Package / Node ${{ matrix.node }}
