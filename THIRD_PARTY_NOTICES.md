@@ -1,7 +1,27 @@
-MIT License
+# Third-party notices
 
-Copyright (c) 2026 Hraness contributors
+Lifecharts is licensed under the MIT License in [LICENSE](LICENSE). The CLI
+(`bin/lifecharts.mjs`) and its identical skill helper
+(`skills/lifecharts/scripts/lifecharts.mjs`) also bundle the code below. Each
+component is licensed under the MIT License, and its copyright notice and
+license text are reproduced here.
 
+## @hraness/support-foundation 0.6.0
+
+- Source: https://github.com/hraness/support-foundation/tree/8bb514d24b79dc3f305390700ae312cab88e7ad2
+- Copyright (c) 2026 Hraness
+
+## Audience rule from @hraness/desktop-foundation 0.8.0
+
+- Source: https://github.com/hraness/desktop-foundation/releases/tag/v0.8.0
+- Copyright (c) 2026 hraness
+
+## MIT License text
+
+The following text applies to each component above, with that component's
+copyright notice:
+
+```text
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
@@ -19,3 +39,4 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
+```

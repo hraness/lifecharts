@@ -22,7 +22,8 @@ def verify(archive_path, root):
     assert receipt["schema"] == 1 and receipt["name"] == manifest["name"]
     assert receipt["version"] == manifest["version"], "Version drift"
     expected = {
-        "package.json", "README.md", "LICENSE", "bin/lifecharts.mjs",
+        "package.json", "README.md", "LICENSE", "THIRD_PARTY_NOTICES.md",
+        "bin/lifecharts.mjs",
         "skills/lifecharts/SKILL.md", "skills/lifecharts/LICENSE.md",
         "skills/lifecharts/agents/openai.yaml",
         "skills/lifecharts/references/chart-format.md",
