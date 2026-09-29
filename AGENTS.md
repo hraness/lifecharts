@@ -5,7 +5,7 @@ This repository distributes the Lifecharts CLI and agent skill. Keep application
 - Submit changes through a reviewed pull request. Both Package CI jobs must pass before merging. Follow `RELEASING.md` for release and npm mirror operations.
 - Keep the nine-file package allowlist, `release-files.json`, package version, executable version, and bundled skill consistent. The CLI and skill helper must have identical bytes.
 - Use `npm pack --ignore-scripts --pack-destination <temporary-directory>`, then `python3 scripts/verify-package.py <archive> .` and `node scripts/check-package.mjs <archive>` to validate the exported package locally. Use the installed host scheduler for packaging on Hraness development machines.
-- Test Node 22.14.0 and 24.20.0 in CI. The public package has no runtime dependencies or installation scripts.
+- Test Node 22.14.0 and 24.20.0 in CI on Linux, and install the packed archive globally with Node 22.14.0 on macOS and Windows. The public package has no runtime dependencies or installation scripts.
 - Publish immutable GitHub Release archives first. npm is an exact-byte mirror of an existing verified archive; never repack for npm or overwrite released versions.
 
 <!-- hraness-public-copy:start -->
