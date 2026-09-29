@@ -15,11 +15,13 @@ on:
 permissions:
   contents: read
 
-# Superseded pull request pushes are cancelled. Main pushes, the release
-# controller's workflow_call (tag push or main dispatch), and recoveries are
-# keyed by event and commit and never cancelled.
+# Superseded pull request pushes are cancelled. Every other run (main push,
+# the release controller's workflow_call from a tag push or main dispatch, and
+# recoveries) gets a group keyed by its own run id, so it never waits behind,
+# or is cancelled by, another run. Under workflow_call, github.run_id is the
+# caller's run, which is unique per release run.
 concurrency:
-  group: package-ci-${{ github.event_name }}-${{ github.event_name == 'pull_request' && github.ref || github.sha }}
+  group: package-ci-${{ github.event_name == 'pull_request' && github.ref || github.run_id }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
