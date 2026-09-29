@@ -3,9 +3,10 @@
   "name": "@hraness/lifecharts",
   "version": "1.0.5",
   "files": {
-    "package.json": "e1e2c5c170e13c266958ce9f09097fa9127a71078b9603d02612c8420238ef64",
-    "README.md": "a54713cb0127d3a8063facf8645b45ed4135ece1221c8c2a11276398e4802b1d",
-    "LICENSE": "29718120adb6d7a3770a6ce1107b85b3ba793b6a7890a4d83d3b36902bbc21c6",
+    "package.json": "d856714270dd87955b9d1245c219eafd98f45cdabf41c142a2a8b2a9284e0e20",
+    "README.md": "d7682dd4c3511cb6ee82a08eac64732951fd2aa19c67fe99103c4f52b958d001",
+    "LICENSE": "fa7d249dcd800e7faa648a60289865073d8819d477ab3f5edcd626345160d452",
+    "THIRD_PARTY_NOTICES.md": "9174256227dedca99936b1c3975135065a785145d1960aeda6f69024ea9da3ef",
     "bin/lifecharts.mjs": "c9fdd898da7d1c6eb60097b2996d568b29fcb1f0a1086108d193eae0b51c72c3",
     "skills/lifecharts/SKILL.md": "69b5c757fb50f31017c3a932e9a68e5274d5b4852567e380ff842451acb37847",
     "skills/lifecharts/LICENSE.md": "29718120adb6d7a3770a6ce1107b85b3ba793b6a7890a4d83d3b36902bbc21c6",

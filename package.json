@@ -14,7 +14,8 @@
     "bin/lifecharts.mjs",
     "skills/lifecharts",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    "THIRD_PARTY_NOTICES.md"
   ],
   "repository": {
     "type": "git",

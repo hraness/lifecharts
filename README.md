@@ -81,3 +81,12 @@ Releases include the package archive, `release.json`, and `SHA256SUMS`. Verify t
 `lifecharts support` shows optional paid support for continued development;
 every feature stays free and no account is needed. Agents read `lifecharts
 support protocol --json` for the closeout procedure.
+
+## License
+
+The CLI and skill are available under the [MIT License](LICENSE). Notices for
+the bundled third-party code are in
+[THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). The research tables at
+[lifecharts.io/data](https://lifecharts.io/data) are licensed under
+[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/); the government and
+research sources they cite keep their own terms.
