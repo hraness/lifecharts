@@ -18,11 +18,20 @@ Bun 1.3.14 or newer also works; replace `node` with `bun`. The
 through its `lifecharts` executable. Use the bundled script when the skill is
 already installed; no separate package installation is needed.
 
+The copied skill helper stays at its installed version. A supported global
+`lifecharts` command may check for and install a release before processing a
+chart. Use `lifecharts update status --json` to inspect it, `lifecharts update
+disable` to keep a version, or `HRANESS_NO_UPDATE=1` for an offline invocation.
+Chart input is never included in an update request.
+Automatic updates require version 1.1.0 or newer and an authenticated GitHub
+CLI (`gh`). Upgrade older global installations once with the documented installer.
+
 ## Create a useful chart
 
 Start with the facts the user supplies: chapters, dates, a résumé, or authorized
 profile material. A birthday and LinkedIn profile are optional. If a profile
-is inaccessible, ask for the relevant pasted text. The CLI does not fetch URLs.
+is inaccessible, ask for the relevant pasted text. Chart commands do not fetch
+profile or chart URLs.
 Do not infer birthdays from graduation years, invent personal milestones, or
 turn vague years into precise dates. Ask for the missing month when it matters;
 preserve supplied month-only dates as `YYYY-MM`.

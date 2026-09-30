@@ -16,6 +16,11 @@ license text are reproduced here.
 - Source: https://github.com/hraness/desktop-foundation/releases/tag/v0.8.0
 - Copyright (c) 2026 hraness
 
+## @hraness/cli-update 0.1.0
+
+- Source: https://github.com/hraness/cli-update/releases/tag/v0.1.0
+- Copyright (c) 2026 Hraness
+
 ## MIT License text
 
 The following text applies to each component above, with that component's

@@ -10,6 +10,10 @@ It also bundles the audience rule from @hraness/desktop-foundation 0.8.0.
 Copyright (c) 2026 hraness
 Source: https://github.com/hraness/desktop-foundation/releases/tag/v0.8.0
 
+It also bundles @hraness/cli-update 0.1.0.
+Copyright (c) 2026 Hraness
+Source: https://github.com/hraness/cli-update/releases/tag/v0.1.0
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
