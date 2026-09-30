@@ -2,6 +2,15 @@
 
 Each release page on GitHub copies its summary and changes from the matching section below. Add the section for a new version in the pull request that bumps it.
 
+## 1.1.0 - 2026-09-30
+
+Lifecharts keeps supported global installations up to date before ordinary commands, with controls for checking releases and turning automatic updates off.
+
+- Check for a stable release at most once a day on supported global Bun and npm installations on macOS and Linux. Downloads use the authenticated GitHub CLI and verified immutable release archives.
+- Add `lifecharts update`, `update check`, `update status`, `update enable`, and `update disable`, with JSON output for scripts. Preserve exact Bun version pins and saved opt-outs.
+- Wait for running commands before replacing the installation, then run the requested command with its original arguments and input. CI, help, support commands, nested tools, and `HRANESS_NO_UPDATE=1` skip automatic checks.
+- Keep copied Agent Skill helpers, source checkouts, project dependencies, and Windows installations on their existing update workflow. Document the one-time upgrade for older CLI installations.
+
 ## 1.0.5 - 2026-09-26
 
 Running `lifecharts` with no arguments now shows a short start screen, and agents get errors as JSON they can read. Chart links, file formats and exit codes work as before.

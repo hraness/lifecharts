@@ -20,6 +20,18 @@ try {
   const manifest = JSON.parse(await readFile(join(installed, 'package.json'), 'utf8'));
   assert.equal(run('npm', ['exec', '--offline', '--', 'lifecharts', '--version']), `lifecharts ${manifest.version}`);
   const cli = join(installed, 'bin/lifecharts.mjs');
+  const [major, minor] = manifest.version.split('.').map(Number);
+  if (major > 1 || (major === 1 && minor >= 1)) {
+    for (const executable of [cli, join(installed, 'skills/lifecharts/scripts/lifecharts.mjs')]) {
+      const status = JSON.parse(run(process.execPath, [executable, 'update', 'status', '--json']));
+      assert.equal(status.schema, 'hraness.cli-update.v1');
+      assert.equal(status.package, manifest.name);
+      assert.equal(status.currentVersion, manifest.version);
+      assert.equal(status.status, 'unsupported');
+      assert.equal(status.supported, false);
+    }
+    assert.match(run(process.execPath, [cli, 'update', '--help']), /update \[check\|status\|enable\|disable\]/);
+  }
   if (Number(manifest.version.split('.')[0]) >= 1 && manifest.version !== '1.0.0' && manifest.version !== '1.0.1') {
     const protocol = JSON.parse(run(process.execPath, [cli, 'support', 'protocol', '--json']));
     assert.equal(protocol.offer.product.id, 'lifedaysleft');
