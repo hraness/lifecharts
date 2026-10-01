@@ -1,17 +1,17 @@
 {
   "schema": 1,
   "name": "@hraness/lifecharts",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "files": {
-    "package.json": "a61d296190dcb53e1e52596d6a0aea35fc1e0271840453732c09d1237a23839b",
-    "README.md": "4f8cef0ff3cad18e102fd46981a73cb470847a8749b8f8e472fc2f810b56bd8d",
+    "package.json": "bf4017f5d554cc3dc961400f873610e3b434cfabee05a169c96520db84824448",
+    "README.md": "db497782357d7a043fd7c5c0b9528b64d00dbdf2774c878ba3f3107b1f338859",
     "LICENSE": "fa7d249dcd800e7faa648a60289865073d8819d477ab3f5edcd626345160d452",
     "THIRD_PARTY_NOTICES.md": "f84fbdbc4f552123fb41dd5ea1d35c688a92bcc64c3074f00a80fa786e8b61bb",
-    "bin/lifecharts.mjs": "bece40688e74c6b34489d82e2a096f3fa2b0a56e06b53a444a8ce02dbca032ab",
+    "bin/lifecharts.mjs": "c881fcfc54d856f056283f7e0190f3ebb7fa0dcf92f98f31742313bbb4057ede",
     "skills/lifecharts/SKILL.md": "6d854c388cefe529ddbb54c7596e08398e666e4b4a96dd6fd9e541fee55a6b07",
     "skills/lifecharts/LICENSE.md": "1121919817d0dbcd6243abc838de481b29d684e196671a96ede2f1a08a4b4869",
     "skills/lifecharts/agents/openai.yaml": "53d5421165d488c69731b78284d2f0bfdd53cd77747c96b165e7a89203bdacaa",
-    "skills/lifecharts/references/chart-format.md": "2cddacc1a3dc50d51a90eb580d9f06c84509a75e050455336c7c81e424f7caa9",
-    "skills/lifecharts/scripts/lifecharts.mjs": "bece40688e74c6b34489d82e2a096f3fa2b0a56e06b53a444a8ce02dbca032ab"
+    "skills/lifecharts/references/chart-format.md": "92fcca89b884d5f991e5af3ef02a1389d8139f8a1aa64c4e9a4e91aed9b8d636",
+    "skills/lifecharts/scripts/lifecharts.mjs": "c881fcfc54d856f056283f7e0190f3ebb7fa0dcf92f98f31742313bbb4057ede"
   }
 }

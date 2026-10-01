@@ -2,6 +2,14 @@
 
 Each release page on GitHub copies its summary and changes from the matching section below. Add the section for a new version in the pull request that bumps it.
 
+## 1.1.1
+
+Lifecharts' installation guide and chart reference describe the published CLI and its current error output.
+
+- Remove outdated publication caveats from the installation instructions.
+- Clarify JSON error output and exit codes for scripts and agents.
+- Update the bundled agent skill reference to match the CLI's error handling.
+
 ## 1.1.0 - 2026-09-30
 
 Lifecharts keeps supported global installations up to date before ordinary commands, with controls for checking releases and turning automatic updates off.

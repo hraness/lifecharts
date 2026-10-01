@@ -6,17 +6,17 @@ This package includes a local CLI and the Lifecharts agent skill. Commands creat
 
 ## Run the CLI
 
-The immutable GitHub Release archive is the canonical distribution. The commands below target version 1.1.0 and require its published immutable release. The prior published version is 1.0.5.
+Run Lifecharts from its GitHub Release archive:
 
 ```sh
-npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.1.0/hraness-lifecharts-1.1.0.tgz lifecharts --help
+npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.1.1/hraness-lifecharts-1.1.1.tgz lifecharts --help
 ```
 
-When this version is available on npm, its archive is an exact-byte mirror:
+Or use npm:
 
 ```sh
-npx --yes @hraness/lifecharts@1.1.0 --help
-npm install --global @hraness/lifecharts@1.1.0
+npx --yes @hraness/lifecharts@1.1.1 --help
+npm install --global @hraness/lifecharts@1.1.1
 ```
 
 Run `lifecharts` without arguments for a short start screen, and `lifecharts --help` for every command. Piped output stays plain.
@@ -72,7 +72,7 @@ lifecharts compile chart.json > updated.url
 Without a global installation, use this pinned command prefix before the command and arguments:
 
 ```sh
-npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.1.0/hraness-lifecharts-1.1.0.tgz lifecharts create timeline.json --json
+npx --yes --package=https://github.com/hraness/lifecharts/releases/download/v1.1.1/hraness-lifecharts-1.1.1.tgz lifecharts create timeline.json --json
 ```
 
 `create --json` returns the complete document, share link, edit link, and embed link. Use `-` for stdin. Quote complete URLs in shell commands.
@@ -94,11 +94,13 @@ bun skills/lifecharts/scripts/lifecharts.mjs --help
 
 Read [the format reference](skills/lifecharts/references/chart-format.md) for limits, date precision, nested chapters, and display options. A LinkedIn profile is context for your agent; this CLI does not fetch profiles or infer missing personal facts.
 
-## Sharing and release verification
+## Share a chart
 
 The returned URL contains the chart. Anyone with it can read its title, dates, chapters, notes, and links. Ordinary fragment links keep that data outside the page request. Named social preview images are a separate opt-in action on the website.
 
-Releases include the package archive, `release.json`, and `SHA256SUMS`. Verify the archive checksum before installing from a downloaded file. Published GitHub releases are immutable. The npm mirror can follow later without delaying the canonical release.
+## Verify a download
+
+Each immutable [GitHub Release](https://github.com/hraness/lifecharts/releases) includes the package archive, `release.json`, and `SHA256SUMS`. Check the archive against `SHA256SUMS` before installing a downloaded file. npm distributes the same archive.
 
 ## Optional development support
 

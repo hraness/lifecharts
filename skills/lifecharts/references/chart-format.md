@@ -4,7 +4,9 @@ The bundled CLI runs offline under Node.js 22.14 or newer, or Bun 1.3.14 or newe
 Run `node <skill-path>/scripts/lifecharts.mjs --help` to list all commands. If the
 `@hraness/lifecharts` package is installed, `lifecharts` exposes the same interface.
 Success exits 0, invalid input exits 1, and invalid command syntax exits 2. The CLI
-writes results to stdout and errors to stderr; it never logs the source input.
+writes results to stdout. With `--json` or an agent audience, a failed chart
+command writes a JSON error to stdout; otherwise it writes a readable error to
+stderr. Check the exit code before using redirected output as a chart.
 
 ## Creation JSON
 
