@@ -45,6 +45,8 @@ temporary npx/bunx runs, source trees, and copied skill helpers do not replace
 themselves. A running Lifecharts command protects its installation from updates.
 On Windows, update Lifecharts through npm or Bun.
 
+## Create your first chart
+
 Write your chapters into `timeline.json`:
 
 ```json
@@ -68,6 +70,16 @@ lifecharts inspect timeline.url > chart.json
 # Edit chart.json, then compile the complete document:
 lifecharts compile chart.json > updated.url
 ```
+
+`timeline.url` contains a link beginning with `https://lifecharts.io/view#t=1.`. Open it in your browser to see Sam's two chapters in bars view. `chart.json` is the complete version 1 document, including generated chapter IDs and colors. Keep it as a backup; compiling it restores a chart link without the original browser's saved draft.
+
+To check the restored link, run:
+
+```sh
+lifecharts verify updated.url --json
+```
+
+A successful check exits with code 0 and returns `verified: true`. This checks the chart document locally, not whether the website is reachable. If a command fails, check its exit code before using the redirected file. See [command output and errors](skills/lifecharts/references/chart-format.md) and [complete-document fields](skills/lifecharts/references/chart-format.md#lossless-version-1-json).
 
 Without a global installation, use this pinned command prefix before the command and arguments:
 
