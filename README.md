@@ -1,5 +1,13 @@
 # Lifecharts
 
+> 📊 Lifecharts draws your life as a timeline of chapters: a city, a school, a
+> job, a relationship. Add them by hand or ask your agent to build the timeline
+> from a résumé or a few notes, then share a link or embed it.
+>
+> Make yours: https://lifecharts.io
+>
+> — Ben Guo
+
 Lifecharts is a free life timeline maker. Add the chapters of your life, like a city, a school, a job, or a relationship, by hand or with your agent, and share the result.
 
 This package includes a local CLI and the Lifecharts agent skill. Commands create and validate chart links without uploading your data. Use Node.js 22.14 or newer, or Bun 1.3.14 or newer. The package has no runtime dependencies or installation scripts.
