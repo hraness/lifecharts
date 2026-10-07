@@ -2,7 +2,7 @@
 
 ## Reporting a vulnerability
 
-Report vulnerabilities in the Lifecharts CLI, the bundled agent skill, or the release tooling privately through GitHub: open the [Security tab](https://github.com/hraness/lifecharts/security/advisories/new) and choose "Report a vulnerability". Please do not file a public issue for a suspected vulnerability.
+Report vulnerabilities in the Lifecharts CLI, the bundled agent skill, or the release tooling privately through GitHub: open the [Security tab](https://github.com/hraness/lifecharts/security/advisories/new) and choose "Report a vulnerability". Please do not file a public issue for a suspected vulnerability. If GitHub reporting is unavailable, email [hraness@pm.me](mailto:hraness@pm.me).
 
 Include the affected version, the steps to reproduce, and what an attacker could do. We aim to acknowledge a report within three business days and to tell you the outcome of triage within ten.
 
