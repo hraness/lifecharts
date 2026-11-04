@@ -1,5 +1,7 @@
 # Lifecharts
 
+> **Retired.** Lifecharts is no longer maintained, and lifecharts.io is discontinued. The source and existing CLI releases are preserved. The documentation below describes the archived project.
+
 > 📊 Lifecharts draws your life as a timeline of chapters: a city, a school, a
 > job, a relationship. Add them by hand or ask your agent to build the timeline
 > from a résumé or a few notes, then share a link or embed it.
